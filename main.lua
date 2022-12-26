@@ -141,7 +141,7 @@ end
     
     Deletes all duplicates from a table, leaving only one of each element.
         
-    Time complexity: O(#t log #t)
+    Time complexity: O(#t)
     Space complexity: O(#t)
     
 --]]
