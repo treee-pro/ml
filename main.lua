@@ -298,11 +298,6 @@ end
 
 --[[
     
-    ml Testarea
+    Tests
     
 --]]
-
-table.foreach(ml "DeleteDuplicates" {
-    {1,2,"a","a", 4, 3, 2,5,5,4};
-    3
-}, warn)
