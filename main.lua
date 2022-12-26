@@ -169,7 +169,7 @@ end
     ml "Drop" { t: table, {m: number, n: number} } gives list with elements m through n dropped.
     ml "Drop" { t: table, {m: number, n: number, s: number} } gives list with elements m through n in steps of s dropped.
         
-    Time complexity: O(#t log #t)
+    Time complexity: O(#t)
     Space complexity: O(#t)
     
 --]]
