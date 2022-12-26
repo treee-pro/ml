@@ -158,6 +158,58 @@ end
 
 --[[
 
+    ml "Drop" {
+        t: table;
+        index: number / table;
+    } -> table
+    
+    ml "Drop" {t: table, n: number} gives list with its first n elements dropped.
+    ml "Drop" {t: table, -n: number} gives list with its last n elements dropped.
+    ml "Drop" { t: table, {n: number} } gives list with its n-th element dropped.
+    ml "Drop" { t: table, {m: number, n: number} } gives list with elements m through n dropped.
+    ml "Drop" { t: table, {m: number, n: number, s: number} } gives list with elements m through n in steps of s dropped.
+        
+    Time complexity: O(#t log #t)
+    Space complexity: O(#t)
+    
+--]]
+function ml.Drop(p)
+    local t, index, result = p[1], p[2], {}
+    if ml "TypeQ" {index, "number"} then
+        if index > 0 then
+            for i = index + 1, #t do
+                result[#result+1] = t[i]
+            end
+        elseif index < 0 then
+            for i = 1, #t + index do
+                result[#result + 1] = t[i]
+            end
+        end
+    elseif ml "TypeQ" {index, "table"} then
+        if #index == 1 then
+            for i=1, #t do
+                if i ~= index[1] then
+                    result[#result+1] = t[i]
+                end
+            end
+        elseif #index == 2 then
+            for i=1, #t do
+                if i < index[1] or i > index[2] then
+                    result[#result+1] = t[i]
+                end
+            end
+        elseif #index == 3 then
+            for i=1, #t do
+                if i < index[1] or i > index[2] or ((i - index[1]) % index[3] ~= 0) then
+                    result[#result + 1] = t[i]
+                end
+            end
+        end
+    end
+    return result
+end
+--[[
+
     ml "Partition" {
         t: table;
         n: number or 1;
@@ -313,6 +365,3 @@ end
     Tests
     
 --]]
-
--- return
-return ml
