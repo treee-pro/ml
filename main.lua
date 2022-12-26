@@ -1,8 +1,8 @@
 
 --[[
 
-    Inspired by Wolfram Mathematica;
-    the mlua library
+    the mlua library -
+    Inspired by the Wolfram Language.
     
 --]]
 
@@ -14,7 +14,6 @@ local Services = setmetatable({}, {
     }
 )
 
--- init
 local ml = setmetatable({}, {
     __call = function(self, m)
         return self[m] or nil
@@ -29,6 +28,20 @@ local ml = setmetatable({}, {
 
 --[[
     
+    ml "TypeQ" {
+        n: any?;
+        t: string;
+    } -> boolean
+    
+    Checks whether n is of type t.
+
+--]]
+function ml.TypeQ(p)
+    return typeof(p[1]) == p[2]
+end
+
+--[[
+    
     ml "IntegerQ" {
         n: any?;
     } -> boolean
@@ -39,7 +52,6 @@ local ml = setmetatable({}, {
 function ml.IntegerQ(p)
     return p[1] % 1 == 0
 end
-
 
 --[[
 
@@ -67,10 +79,10 @@ end
 --]]
 function ml.Map(p)
     local f, t, level = p[1], p[2], p[3] or 1
-    if level == 0 then -- Base case.
+    if level == 0 then
         return t
     end
-    for i, v in ipairs(t) do -- Recursive mapping.
+    for i, v in ipairs(t) do
         if type(v) == "table" then
             t[i] = ml "Map" {f, v, level - 1}
             else
@@ -95,7 +107,7 @@ end
 --]]
 function ml.Flatten(p)
     local t, level, result = p[1], p[2] or 1, {}
-    if level == 0 then -- Base case.
+    if level == 0 then
         return t
     end
     local function flatten(t, level)
