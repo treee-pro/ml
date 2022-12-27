@@ -54,6 +54,27 @@ function ml.IntegerQ(p)
 end
 
 --[[
+    
+    ml "Range" {
+        imin: number;
+        imax: number;
+        di: number or 1;
+    } -> table
+    
+    Returns the table {imin, ..., imax} using steps di.
+
+--]]
+function ml.Range(p)
+    local imin, imax, di = p[1], p[2], p[3] or 1
+    local result = {}
+    while imin <= imax do
+        table.insert(result, imin)
+        imin = imin + di
+    end
+    return result
+end
+
+--[[
 
     Data Manipulation and Analysis
     
@@ -286,6 +307,50 @@ end
 
 --[[
 
+    ml "RandomChoice" {
+        t: table;
+        weights: (number or table)?;
+    } -> table
+    
+    ml "RandomChoice" {t: table} gives a pseudorandom choice of one of the elements in t.
+    ml "RandomChoice" {t: table, n: number} gives a list of n pseudorandom choices.
+    ml "RandomChoice" {t: table, weights: table} gives a pseudorandom choice weighted by weights. For example, ml "RandomChoice" { {1, 2, 3}, {0.1, 0.5, 1} }.
+
+    Time complexity: O(#t)
+    Space complexity: O(1)
+    
+--]]
+function ml.RandomChoice(p)
+    local t, weights = p[1], p[2] or nil
+    if not weights then
+        return t[math.random(#t)]
+    elseif ml "TypeQ" {weights, "number"} then
+        local result = {}
+        for i=1, weights do
+            table.insert(result, t[math.random(#t)])
+        end
+        return result
+    elseif ml "TypeQ" {weights, "table"} then
+        if #t ~= #weights then
+            return warn("size of t and weights must be equal")
+        end
+        local total_weight = 0
+        for i=1, #t do
+            total_weight = total_weight + weights[i]
+        end
+        local random_weight = math.random() * total_weight
+        for i=1, #t do
+            random_weight = random_weight - weights[i]
+            if random_weight <= 0 then
+                return t[i]
+            end
+        end
+    end
+    return
+end
+
+--[[
+
     Higher Mathematical Computation
     
     Polynomial Algebra, Linear Algebra, Tensor Algebra,
@@ -360,8 +425,4 @@ function ml.EulerPhi(p)
     return result
 end
 
---[[
-    
-    Tests
-    
---]]
+return ml
