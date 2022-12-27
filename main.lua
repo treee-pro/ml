@@ -149,12 +149,6 @@ function ml.Flatten(p)
 end
 
 --[[
-    
-    !!
-    NEEDS HELP!
-    Its time complexity can be improved to O(#t log #t) if we use Binary Search instead of a hash table.
-    I don't know how to. If you can, please send a pull-request, defining ml "BinarySearch". Thanks!
-    !!
 
     ml "DeleteDuplicates" {
         t: table;
@@ -254,6 +248,31 @@ function ml.Partition(p)
     return result
 end
 
+--[[
+
+    ml "FindDivisions" {
+        {imin: number, imax: number};
+        n: number;
+        dx: number?;
+    } -> table
+    
+    Returns a list of about n "nice" numbers that divide the interval around imin to imax into equally spaced parts.
+    An optional parameter dx makes the parts always have lengths that are integer multiples of dx.
+        
+    Time complexity: O(n)
+    Space complexity: O(n)
+    
+--]]
+function ml.FindDivisions(p)
+    local imin, imax, n, dx = p[1][1], p[1][2], p[2], p[3] or math.floor(p[1][2]-p[1][1]) / p[2]
+    local divisions = {}
+    while imin <= imax do
+        divisions[#divisions+1] = imin
+        imin = imin + dx
+    end
+    return divisions
+end
+    
 --[[
 
     ml "Shuffle" {
@@ -424,5 +443,9 @@ function ml.EulerPhi(p)
     end
     return result
 end
+
+table.foreach(ml "FindDivisions" {
+    {0, 1}, 5, 0.25
+}, print)
 
 return ml
