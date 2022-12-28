@@ -3,8 +3,8 @@
 
 --]]
 
-local ml = {}
+local t = {}
 
 table.foreach(ml "Range" {1,5}, warn)
 
-return ml
+return t
