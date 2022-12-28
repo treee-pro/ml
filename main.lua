@@ -444,8 +444,4 @@ function ml.EulerPhi(p)
     return result
 end
 
-table.foreach(ml "FindDivisions" {
-    {0, 1}, 5, 0.25
-}, print)
-
 return ml
