@@ -173,7 +173,7 @@ end
     
 --]]
 function ml.CharacterRange(p)
-    local c1, c2 = p[1], p[2]
+    local c1, c2, result = p[1], p[2], {}
     if type(c1) == "string" then
         c1 = string.byte(c1)
     end
