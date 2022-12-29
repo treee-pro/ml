@@ -4,6 +4,8 @@
     the mlua library -
     Inspired by the Wolfram Language.
     
+    Algorithms, computations, etc.
+    
 --]]
 
 -- var
@@ -20,38 +22,14 @@ local ml = setmetatable({}, {
     end
 })
 
---[[
 
-    Core Language and Structure
-
---]]
-
---[[
+--[[ ---------- ---------- ---------- ---------- ---------- ---------- ----------
     
-    ml "TypeQ" {
-        n: any?;
-        t: string;
-    } -> boolean
-    
-    Checks whether n is of type t.
+    Core Language & Structure
+        > List Manipulation
+            > Constructing Lists
 
---]]
-function ml.TypeQ(p)
-    return typeof(p[1]) == p[2]
-end
-
---[[
-    
-    ml "IntegerQ" {
-        n: any?;
-    } -> boolean
-    
-    Checks whether n is an integer.
-
---]]
-function ml.IntegerQ(p)
-    return p[1] % 1 == 0
-end
+--]] ---------- ---------- ---------- ---------- ---------- ---------- ----------
 
 --[[
     
@@ -62,6 +40,8 @@ end
     } -> table
     
     Returns the table {imin, ..., imax} using steps di.
+    
+    T/S: O(n), O(n)
 
 --]]
 function ml.Range(p)
@@ -76,116 +56,157 @@ end
 
 --[[
 
-    Data Manipulation and Analysis
+    ml "Table" {
+        expr: any;
+        t<imin: number, imax: number, di: number or 1>: table || n: number;
+    }: table
     
-    Array Manipulation, Data Transformation & Filtering, Statistical Data Analysis,
-    Machine Learning
-
---]]
-
-
---[[
-
-    ml "Map" {
-        f: function;
-        t: table;
-        level: number or 1;
-    } -> table
+    Table(expr, n) generates a table of n copies of expr.
+    Table(expr: function, {imin, imax, di}) generates a table of the values of expr(i) when i runs from [imin, imax], using steps di.
     
-    Applies a function to each element on the n-th level in a table.
-        
-    Time complexity: O(#t * max depth)
-    Space complexity: O(1)
+    T/S: O(n), O(n)
     
 --]]
-function ml.Map(p)
-    local f, t, level = p[1], p[2], p[3] or 1
-    if level == 0 then
-        return t
-    end
-    for i, v in ipairs(t) do
-        if type(v) == "table" then
-            t[i] = ml "Map" {f, v, level - 1}
-            else
-                t[i] = f(v)
+function ml.Table(p)
+    local expr, n, result = p[1], p[2], {}
+    if type(n) == "table" then
+        local imin, imax, di = n[1], n[2], n[3] or 1
+        if di == 0 then
+            return {expr(imin)}
         end
+        for i = imin, imax, di do
+            result[#result + 1] = expr(i)
+        end
+        return result
+        else
+            result[n] = nil
+            for i = 1, n do
+                result[i] = expr
+            end
+        return result
     end
-    return t
 end
 
 --[[
 
-    ml "Flatten" {
-        t: table;
-        level: number or 1;
-    } -> table
+    ml "FixedPointList" {
+        f: function;
+        expr: any;
+        max_iterations: number;
+    }: table
     
-    Flattens out nested tables to the n-th level.
-        
-    Time complexity: O(#t)
-    Space complexity: O(#t)
+    Generates a table giving the results of applying f repeatedly, starting with expr, until the results no longer change.
+    Calculations may not converge in a finite number of steps. Setting the max iterations n will guarantee termination.
+    Convergence may fail in machine-precision computations.
+    
+    T/S: O(n), O(n)
     
 --]]
-function ml.Flatten(p)
-    local t, level, result = p[1], p[2] or 1, {}
-    if level == 0 then
-        return t
-    end
-    local function flatten(t, level)
-        for i, v in pairs(t) do
-            if type(v) == "table" then
-                if level > 0 then
-                    flatten(v, level - 1)
-                    else
-                        table.insert(result, v)
-                end
-                else
-                    table.insert(result, v)
-            end
+function ml.FixedPointList(p)
+    local f, expr, n = p[1], p[2], p[3] or math.huge
+    local result, last_result = {expr}, expr
+    local i = 1
+    while i <= n do
+        local new_result = f(last_result)
+        result[#result + 1] = new_result
+        if new_result == last_result then
+            return result
         end
+        last_result = new_result
+        i = i + 1
     end
-    flatten(t, level)
     return result
 end
 
 --[[
 
-    ml "DeleteDuplicates" {
-        t: table;
-    } -> table
+    ml "Subdivide" {
+        xmin: number;
+        xmax: number;
+        n: number;
+    }: table
     
-    Deletes all duplicates from a table, leaving only one of each element.
-        
-    Time complexity: O(#t)
-    Space complexity: O(#t)
+    Generates a table of values from subdividing [xmin, xmax] into n equal parts.
+    
+    T/S: O(n), O(n)
     
 --]]
-function ml.DeleteDuplicates(p)
-    local t, seen, unique = p[1], {}, {}
-    for _, v in ipairs(t) do
-        if not seen[v] then
-            seen[v] = true
-            unique[#unique + 1] = v
-        end
+function ml.Subdivide(p)
+    local xmin, xmax, n = p[1], p[2], p[3]
+    local result, step = {}, (xmax - xmin) / n
+    for i = 1, n + 1 do
+        result[i] = xmin + (i - 1) * step
     end
-    return unique
+    return result
 end
 
 --[[
 
+    ml "Characters" {
+        str: string;
+    }: table
+    
+    Gives a table of all the characters in a string.
+    
+    T/S: O(n), O(n)
+    
+--]]
+function ml.Characters(p)
+    local str, result = p[1] or "", {}
+    for i = 1, #str do
+        result[i] = str:sub(i, i)
+    end
+    return result
+end
+
+--[[
+
+    ml "CharacterRange" {
+        c1: string || number;
+        c2: string || number;
+    }: table
+    
+    CharacterRange(c1: string, c2: string) yields a table of the characters in the range from c1 to c2.
+    CharacterRange(c1: number, c2: number) yields a table of the characters with character codes in the range [c1, c2]
+    
+    T/S: O(n), O(n)
+    
+--]]
+function ml.CharacterRange(p)
+    local c1, c2 = p[1], p[2]
+    if type(c1) == "string" then
+        c1 = string.byte(c1)
+    end
+    if type(c2) == "string" then
+        c2 = string.byte(c2)
+    end
+    for i = c1, c2 do
+        table.insert(result, string.char(i))
+    end
+    return result
+end
+
+--[[ ---------- ---------- ---------- ---------- ---------- ---------- ----------
+    
+    Core Language & Structure
+        > List Manipulation
+            > Elements of Lists
+
+--]] ---------- ---------- ---------- ---------- ---------- ---------- ----------
+
+--[[
     ml "Drop" {
         t: table;
-        index: number / table;
-    } -> table
+        index: number || table;
+    }: table
     
-    ml "Drop" {t: table, n: number} gives list with its first n elements dropped.
-    ml "Drop" {t: table, -n: number} gives list with its last n elements dropped.
-    ml "Drop" { t: table, {n: number} } gives list with its n-th element dropped.
-    ml "Drop" { t: table, {m: number, n: number} } gives list with elements m through n dropped.
-    ml "Drop" { t: table, {m: number, n: number, s: number} } gives list with elements m through n in steps of s dropped.
+    Drop(t: table, n: number) gives t with its first n elements dropped.
+    Drop(t: table, -n: number) gives t with its last n elements dropped.
+    Drop(t: table, {n: number}) gives t with its nth element dropped.
+    Drop(t: table, {m: number, n: number}) gives t with elements m through n dropped.
+    Drop(t: table, {m: number, n: number, s: number}) gives t with elements m through n in steps of s dropped.
         
-    Time complexity: O(#t)
-    Space complexity: O(#t)
+    T/S: O(#t), O(#t)
     
 --]]
 function ml.Drop(p)
@@ -223,120 +244,39 @@ function ml.Drop(p)
     end
     return result
 end
---[[
 
-    ml "Partition" {
+--[[
+    ml "DeleteDuplicates" {
         t: table;
-        n: number or 1;
-    } -> table
+    }: table
     
-    Paritions table into nonoverlapping subtables of length n.
+    Deletes all duplicates from a table, leaving only one of each element.
         
-    Time complexity: O(1)
-    Space complexity: O(#t)
+    T/S: O(#t), O(#t)
     
 --]]
-function ml.Partition(p)
-    local t, n, result = p[1], p[2] or 1, {}
-    for i=1, #t, n do
-        local sublist = {}
-        for j = i, math.min(i + n - 1, #t) do
-            sublist[#sublist + 1] = t[j]
-        end
-        result[#result + 1] = sublist
-    end
-    return result
-end
-
---[[
-
-    ml "FindDivisions" {
-        {imin: number, imax: number};
-        n: number;
-        dx: number?;
-    } -> table
-    
-    Returns a list of about n "nice" numbers that divide the interval around imin to imax into equally spaced parts.
-    An optional parameter dx makes the parts always have lengths that are integer multiples of dx.
-        
-    Time complexity: O(n)
-    Space complexity: O(n)
-    
---]]
-function ml.FindDivisions(p)
-    local imin, imax, n, dx = p[1][1], p[1][2], p[2], p[3] or math.floor(p[1][2]-p[1][1]) / p[2]
-    local divisions = {}
-    while imin <= imax do
-        divisions[#divisions+1] = imin
-        imin = imin + dx
-    end
-    return divisions
-end
-    
---[[
-
-    ml "Shuffle" {
-        t: table;
-        n: number or 1;
-    } -> table
-    
-    Performs a Fisher-Yates shuffle on a table n times.
-        
-    Time complexity: O(n * #t)
-    Space complexity: O(1)
-    
---]]
-function ml.Shuffle(p)
-    local t, n = p[1], p[2] or 1
-    for i=1, n do
-        for j = #t, 2, -1 do
-            local k = math.random(j)
-            t[j], t[k] = t[k], t[j]
+function ml.DeleteDuplicates(p)
+    local t, seen, unique = p[1], {}, {}
+    for _, v in ipairs(t) do
+        if not seen[v] then
+            seen[v] = true
+            unique[#unique + 1] = v
         end
     end
-    return t
+    return unique
 end
 
 --[[
-
-    ml "Riffle" {
-        t1: table;
-        t2: table;
-    } -> table
-    
-    Riffles, or "interleaves" tables t1 and t2 together.
-    
-    For example, {a1, a2, ...}, {b1, b2, ...} -> {a1, b1, a2, b2, ...}
-                 {a1, a2, a3}, {b1} -> {a1, b1, a2, b1, a3}
-                 {a1, a2, a3}, {b1, b2} -> {a1, b1, a2, b2, a3}
-        
-    Time complexity: O(#t1)
-    Space complexity: O(#t1)
-    
---]]
-function ml.Riffle(p)
-    local t1, t2, n, result = p[1], p[2], #p[1], {}
-    for i=1, n do
-        result[#result+1] = t1[i]
-        result[#result+1] = t2[(i-1) % #t2 + 1]
-    end
-    table.remove(result)
-    return result
-end
-
---[[
-
     ml "RandomChoice" {
         t: table;
-        weights: (number or table)?;
-    } -> table
+        weights: number || table;
+    }: table
     
-    ml "RandomChoice" {t: table} gives a pseudorandom choice of one of the elements in t.
-    ml "RandomChoice" {t: table, n: number} gives a list of n pseudorandom choices.
-    ml "RandomChoice" {t: table, weights: table} gives a pseudorandom choice weighted by weights. For example, ml "RandomChoice" { {1, 2, 3}, {0.1, 0.5, 1} }.
-
-    Time complexity: O(#t)
-    Space complexity: O(1)
+    RandomChoice(t: table) gives a pseudorandom choice of one of the elements in t.
+    RandomChoice(t: table, n: number) gives a list of n pseudorandom choices.
+    RandomChoice(t: table, weights: table) gives a pseudorandom choice weighted by weights. Weights must be from 0 to 1.
+    
+    T/S: O(#t), O(1)
     
 --]]
 function ml.RandomChoice(p)
@@ -368,28 +308,168 @@ function ml.RandomChoice(p)
     return
 end
 
---[[
-
-    Higher Mathematical Computation
+--[[ ---------- ---------- ---------- ---------- ---------- ---------- ----------
     
-    Polynomial Algebra, Linear Algebra, Tensor Algebra,
-    Real & Complex Analysis, Discrete Calculus, Iterated Maps & Fractals,
-    Neural Networks, Probability Theory, Random Processes,
-    Discrete Math, Number Theory, Group Theory,
-    Mathematical Data, Cryptography, Logic & Boolean Algebra
+    Core Language & Structure
+        > List Manipulation
+            > Rearraging & Restructuring Lists
 
---]]
+--]] ---------- ---------- ---------- ---------- ---------- ---------- ----------
 
 --[[
+    ml "Flatten" {
+        t: table;
+        level: number || 1;
+    }: table
+    
+    Flattens out nested tables to the n-th level.
+        
+    T/S: O(#t), O(#t)
+    
+--]]
+function ml.Flatten(p)
+    local t, level, result = p[1], p[2] or 1, {}
+    if level == 0 then
+        return t
+    end
+    local function flatten(t, level)
+        for i, v in pairs(t) do
+            if type(v) == "table" then
+                if level > 0 then
+                    flatten(v, level - 1)
+                    else
+                        table.insert(result, v)
+                end
+                else
+                    table.insert(result, v)
+            end
+        end
+    end
+    flatten(t, level)
+    return result
+end
 
+--[[
+    ml "Partition" {
+        t: table;
+        n: number || 1;
+    }: table
+    
+    Partitions table into nonoverlapping subtables of length n.
+        
+    T/S: O(1), O(#t)
+    
+--]]
+function ml.Partition(p)
+    local t, n, result = p[1], p[2] or 1, {}
+    for i=1, #t, n do
+        local sublist = {}
+        for j = i, math.min(i + n - 1, #t) do
+            sublist[#sublist + 1] = t[j]
+        end
+        result[#result + 1] = sublist
+    end
+    return result
+end
+
+--[[
+    ml "Shuffle" {
+        t: table;
+        n: number || 1;
+    }: table
+    
+    Performs a Fisher-Yates shuffle on a table n times.
+        
+    T/S: O(n * #t), O(1)
+    
+--]]
+function ml.Shuffle(p)
+    local t, n = p[1], p[2] or 1
+    for i=1, n do
+        for j = #t, 2, -1 do
+            local k = math.random(j)
+            t[j], t[k] = t[k], t[j]
+        end
+    end
+    return t
+end
+
+--[[
+    ml "Riffle" {
+        t1: table;
+        t2: table;
+    }: table
+    
+    Riffles, or "interleaves" tables t1 and t2 together.
+    
+    For example, {a1, a2, ...}, {b1, b2, ...} -> {a1, b1, a2, b2, ...}
+                 {a1, a2, a3}, {b1} -> {a1, b1, a2, b1, a3}
+                 {a1, a2, a3}, {b1, b2} -> {a1, b1, a2, b2, a3}
+        
+    T/S: O(#t), O(#t)
+    
+--]]
+function ml.Riffle(p)
+    local t1, t2, n, result = p[1], p[2], #p[1], {}
+    for i=1, n do
+        result[#result+1] = t1[i]
+        result[#result+1] = t2[(i-1) % #t2 + 1]
+    end
+    table.remove(result)
+    return result
+end
+
+--[[ ---------- ---------- ---------- ---------- ---------- ---------- ----------
+    
+    Core Language & Structure
+        > List Manipulation
+            > Applying Functions to Lists
+
+--]] ---------- ---------- ---------- ---------- ---------- ---------- ----------
+
+--[[
+    ml "Map" {
+        f: function;
+        t: table;
+        level: number || 1;
+    }: table
+    
+    Applies a function to each element on the n-th level in a table.
+    
+    T/S: O(#t * max depth), O(1)
+    
+--]]
+function ml.Map(p)
+    local f, t, level = p[1], p[2], p[3] or 1
+    if level == 0 then
+        return t
+    end
+    for i, v in ipairs(t) do
+        if type(v) == "table" then
+            t[i] = ml "Map" {f, v, level - 1}
+            else
+                t[i] = f(v)
+        end
+    end
+    return t
+end
+
+--[[ ---------- ---------- ---------- ---------- ---------- ---------- ----------
+    
+    Higher Mathematical Computation
+        > Number Theory
+            > Number Theoretic Functions
+
+--]] ---------- ---------- ---------- ---------- ---------- ---------- ----------
+
+--[[
     ml "GCD" {
         n1, n2, n3, ... : number
-    } -> number
+    }: number
     
     Returns the greatest common divisor of all n_i using the Euclidean Algorithm.
         
-    Time complexity: O(log(math.max(...)))
-    Space complexity: O(1)
+    T/S: O(log(math.max(...))), O(1)
     
 --]]
 function ml.GCD(...)
@@ -413,15 +493,13 @@ function ml.GCD(...)
 end
 
 --[[
-
     ml "EulerPhi" {
         n : number
-    } -> number
+    }: number
     
     Computes the Euler totient function of n.
         
-    Time complexity: O(sqrt(n))
-    Space complexity: O(1)
+    T/S: O(sqrt(n)), O(1)
     
 --]]
 function ml.EulerPhi(p)
@@ -444,4 +522,11 @@ function ml.EulerPhi(p)
     return result
 end
 
+--[[ ---------- ---------- ---------- ---------- ---------- ---------- ----------
+
+    Final handling;
+
+--]] ---------- ---------- ---------- ---------- ---------- ---------- ----------
+
 return ml
+
